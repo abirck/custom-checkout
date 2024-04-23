@@ -1,0 +1,37 @@
+import express, { type Request } from "express";
+import bodyParser from "body-parser";
+import crypto from "crypto";
+import * as path from "path";
+import httpContext from "express-http-context";
+
+require("dotenv").config();
+
+// Initialize express app
+const app = express();
+app.use(httpContext.middleware);
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, "../public")));
+
+app.use((req, res, next) => {
+  const requestId = crypto.randomBytes(4).toString("hex");
+  httpContext.set("requestId", requestId);
+  next();
+});
+
+app.post("/checkout", async (req: Request<{}>, res) => {
+  res.json({ clientSecret: "hi" });
+});
+
+const startServer = async () => {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, async () => {
+    // other start-up stuff we don't want to do in tests
+  });
+};
+
+// don't actually bind to a port in tests
+if (process.env.NODE_ENV !== "test") {
+  startServer();
+}
+
+export default app;
