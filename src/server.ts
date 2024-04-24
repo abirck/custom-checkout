@@ -5,6 +5,9 @@ import * as path from "path";
 import httpContext from "express-http-context";
 
 require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SK, {
+  apiVersion: "2024-04-10; custom_checkout_beta=v1",
+});
 
 // Initialize express app
 const app = express();
@@ -19,7 +22,25 @@ app.use((req, res, next) => {
 });
 
 app.post("/checkout", async (req: Request<{}>, res) => {
-  res.json({ clientSecret: "hi" });
+  const session = await stripe.checkout.sessions.create({
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "T-shirt",
+          },
+          unit_amount: 2000,
+        },
+        quantity: 1,
+      },
+    ],
+    mode: "payment",
+    ui_mode: "custom",
+    return_url: "http://example.com/success",
+  });
+
+  res.json({ clientSecret: session.client_secret });
 });
 
 const startServer = async () => {

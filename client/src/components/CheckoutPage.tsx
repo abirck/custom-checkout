@@ -1,5 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import LoadingSpinner from "./LoadingSpinner";
+import { loadStripe } from "@stripe/stripe-js";
+import { CustomCheckoutProvider } from "@stripe/react-stripe-js";
+import CheckoutForm from "./CheckoutForm";
+const stripe = loadStripe("pk_test_FdYoaC1weOBHn0jv0KvgbHQZ", {
+  betas: ["custom_checkout_beta_2"],
+});
 
 const CheckoutPage: React.FC<{ className?: string }> = ({ className }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -13,20 +19,18 @@ const CheckoutPage: React.FC<{ className?: string }> = ({ className }) => {
   }, [isLoading]);
 
   const doFetch = async () => {
-    fetch(
-      `/checkout`,
-      {
-        method: "POST",
-        mode: "cors",
-        cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: "same-origin", // include, *same-origin, omit
-        headers: {
-          "Content-Type": "application/json",
-        },
-        redirect: "follow", // manual, *follow, error
-        referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        body: JSON.stringify({}),
-      })
+    fetch(`/checkout`, {
+      method: "POST",
+      mode: "cors",
+      cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+      credentials: "same-origin", // include, *same-origin, omit
+      headers: {
+        "Content-Type": "application/json",
+      },
+      redirect: "follow", // manual, *follow, error
+      referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+      body: JSON.stringify({}),
+    })
       .then(async (res) => {
         if (res.status === 200) {
           // check to see we didn't cancel
@@ -47,7 +51,7 @@ const CheckoutPage: React.FC<{ className?: string }> = ({ className }) => {
       });
   };
 
-  if (isLoading) {
+  if (isLoading || !clientSecret) {
     if (!isFetching) {
       doFetch();
       setIsFetching(true);
@@ -59,7 +63,9 @@ const CheckoutPage: React.FC<{ className?: string }> = ({ className }) => {
     <div className={className}>
       <div className="pb-12 space-y-12">
         <div className="col-span-full">
-          <div>{clientSecret}</div>
+          <CustomCheckoutProvider stripe={stripe} options={{ clientSecret }}>
+            <CheckoutForm />
+          </CustomCheckoutProvider>
         </div>
       </div>
     </div>
