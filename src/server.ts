@@ -23,6 +23,7 @@ app.use((req, res, next) => {
 
 app.post("/checkout", async (req: Request<{}>, res) => {
   const session = await stripe.checkout.sessions.create({
+    customer: "cus_OpvtuwflO7Q0ae",
     line_items: [
       {
         price_data: {
