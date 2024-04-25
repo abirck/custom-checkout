@@ -9,7 +9,7 @@ const PayButton = () => {
     setLoading(true);
     try {
       await confirm();
-      window.alert('payment success!');
+      window.alert("payment success!");
     } catch (e) {
       window.alert(`payment error: ${e.message}`);
     } finally {

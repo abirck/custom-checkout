@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useCustomCheckout } from "@stripe/react-stripe-js";
 
 const EmailInput = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const { updateEmail } = useCustomCheckout();
 
   const isEmailValid = (email: string): boolean => {
@@ -17,17 +17,20 @@ const EmailInput = () => {
     if (isEmailValid(val)) {
       updateEmail(val);
     } else {
-      updateEmail('');
+      updateEmail("");
     }
   };
 
   return (
-    <input
-      className="email-input bg-gray-50 border border-gray-300 text-black text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-      type="text"
-      value={email}
-      onChange={handleChange}
-    />
+    <label className="space-y-2">
+      <span>Email</span>
+      <input
+        className="email-input bg-gray-50 border border-gray-300 text-black text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+        type="text"
+        value={email}
+        onChange={handleChange}
+      />
+    </label>
   );
 };
 
