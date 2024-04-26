@@ -1,4 +1,5 @@
 import React from "react";
+import { MyCheckoutSessionContext } from "../providers/MyCheckoutSessionProvider";
 
 export type Address = {
   name: string;
@@ -10,17 +11,36 @@ export type Address = {
   zip: string;
 };
 
-const AddressInput = ({
-  disabled,
-  onChange,
-}: {
-  disabled?: boolean;
-  onChange?: (address: Address) => void;
-}) => {
-  // ppage doesn't seem to send over a billing address and although there is a shipping address on
-  // the customer object it's not on custom checkout's `shippingAddress` so we have to use the
-  // version of a ppage request we make I guess
-  // const { shippingAddress } = useCustomCheckout();
+const addressLooksValidish = (address: Address): boolean => {
+  return !!(
+    address.line1 &&
+    address.city &&
+    address.country &&
+    address.zip &&
+    address.state
+  );
+};
+
+const areAddressesEqual = (address1: Address, address2: Address): boolean => {
+  return (
+    address1.name == address2.name &&
+    address1.line1 == address2.line1 &&
+    address1.line2 == address2.line2 &&
+    address1.city == address2.city &&
+    address1.state == address2.state &&
+    address1.country == address2.country &&
+    address1.zip == address2.zip
+  );
+};
+
+const AddressInput = ({ disabled }: { disabled?: boolean }) => {
+  const { checkoutSession, setAddressOnServer } = React.useContext(
+    MyCheckoutSessionContext
+  );
+
+  if (!checkoutSession) {
+    return null;
+  }
 
   const [name, setName] = React.useState("");
   const [line1, setLine1] = React.useState("");
@@ -30,19 +50,45 @@ const AddressInput = ({
   const [country, setCountry] = React.useState("");
   const [zip, setZip] = React.useState("");
 
-  // override is kind lame, could probably find a better way to do it with a little more investigation
+  // whenever we get an update from the server make sure it's reflected here
+  React.useEffect(() => {
+    console.log("reloading address from server");
+    setName(checkoutSession.shippingAddress.name);
+    setLine1(checkoutSession.shippingAddress.line1);
+    setLine2(checkoutSession.shippingAddress.line2);
+    setCity(checkoutSession.shippingAddress.city);
+    setState(checkoutSession.shippingAddress.state);
+    setCountry(checkoutSession.shippingAddress.country);
+    setZip(checkoutSession.shippingAddress.zip);
+  }, [checkoutSession]);
+
+  // it looks like checkout session gets tax calculated up front by immediately posting a region
+  // update to the server on load so I guess we should do the same thing
+  React.useEffect(() => {
+    if (addressLooksValidish(checkoutSession.shippingAddress)) {
+      setAddressOnServer(checkoutSession.shippingAddress);
+    }
+  }, []);
+
+
   const sendOnChange = (override?: any) => {
-    onChange &&
-      onChange({
-        name,
-        line1,
-        line2,
-        city,
-        state,
-        country,
-        zip,
-        ...override,
-      });
+    const newAddress = {
+      name,
+      line1,
+      line2,
+      city,
+      state,
+      country,
+      zip,
+      ...override,
+    };
+    if (
+      checkoutSession &&
+      !areAddressesEqual(newAddress, checkoutSession.shippingAddress) &&
+      addressLooksValidish(newAddress)
+    ) {
+      setAddressOnServer(newAddress);
+    }
   };
 
   const handleNameChange = (e: { target: { value: string } }) => {
@@ -92,17 +138,6 @@ const AddressInput = ({
             value={name}
             onChange={handleNameChange}
             disabled={disabled}
-          />
-        </label>
-      </div>
-      <div>
-        <label className="space-y-2">
-          <span>Country</span>
-          <input
-            className="full-name-input border border-gray-300 text-black text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-            type="text"
-            disabled
-            value="United States"
           />
         </label>
       </div>
@@ -163,6 +198,17 @@ const AddressInput = ({
             disabled={disabled}
             value={zip}
             onChange={handleZipChange}
+          />
+        </label>
+      </div>
+      <div>
+        <label className="space-y-2">
+          <span>Country</span>
+          <input
+            className="full-name-input border border-gray-300 text-black text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+            type="text"
+            disabled
+            value="United States"
           />
         </label>
       </div>
