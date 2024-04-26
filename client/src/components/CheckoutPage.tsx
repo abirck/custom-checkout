@@ -19,36 +19,37 @@ const CheckoutPage: React.FC<{ className?: string }> = ({ className }) => {
   }, [isLoading]);
 
   const doFetch = async () => {
-    fetch(`/checkout`, {
-      method: "POST",
-      mode: "cors",
-      cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-      credentials: "same-origin", // include, *same-origin, omit
-      headers: {
-        "Content-Type": "application/json",
-      },
-      redirect: "follow", // manual, *follow, error
-      referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-      body: JSON.stringify({}),
-    })
-      .then(async (res) => {
-        if (res.status === 200) {
-          // check to see we didn't cancel
-          if (isLoadingRef.current) {
-            const json = await res.json();
-            if (json.clientSecret) {
-              setClientSecret(json.clientSecret);
-            } else {
-              console.log(`Unexpected response: ${JSON.stringify(json)}`);
-            }
-            setIsFetching(false);
-            setIsLoading(false);
+    try {
+      const res = await fetch(`/checkout`, {
+        method: "POST",
+        mode: "cors",
+        cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: "same-origin", // include, *same-origin, omit
+        headers: {
+          "Content-Type": "application/json",
+        },
+        redirect: "follow", // manual, *follow, error
+        referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+        body: JSON.stringify({}),
+      });
+
+      if (res.status === 200) {
+        // check to see we didn't cancel
+        if (isLoadingRef.current) {
+          const json = await res.json();
+          if (json.clientSecret) {
+            setClientSecret(json.clientSecret);
+          } else {
+            console.log(`Unexpected response: ${JSON.stringify(json)}`);
           }
         }
-      })
-      .catch((err) => {
-        console.log(`fetch error: ${err}`);
-      });
+      }
+    } catch (err) {
+      console.log(`fetch error: ${err}`);
+    }
+
+    setIsFetching(false);
+    setIsLoading(false);
   };
 
   if (isLoading || !clientSecret) {
