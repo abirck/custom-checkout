@@ -20,7 +20,11 @@ const CheckoutForm = () => {
   const handleAddressChange = async (address: Address) => {
     if (checkoutSession?.sessionId) {
       // this method will handle updating the checkout session state with the response
-      const res = await setAddress(checkoutSession.sessionId, address);
+      const res = await setAddress({
+        sessionId: checkoutSession.sessionId,
+        address,
+        requestSessionFirst: debugSettings.requestPaymentPageFirstOnUpdate,
+      });
       if (debugSettings.retrieveAfterUpdateForMyCheckout) {
         // this is where we should simulate custom checkout refreshing from Stripe because we've resolved our "onAddressChange"
         // BUT the browser security blocks me from making the CORS request myself and I don't have a function from custom checkout

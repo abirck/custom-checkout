@@ -30,6 +30,10 @@ app.use((req, res, next) => {
 });
 
 app.post("/checkout", async (req: Request<{}>, res) => {
+  const requestId = httpContext.get("requestId");
+  console.log(
+    `${requestId}:${new Date().toISOString()}: starting stripe.checkout.sessions.create() from server`
+  );
   const session = await stripe.checkout.sessions.create({
     automatic_tax: {
       enabled: true,
@@ -52,18 +56,57 @@ app.post("/checkout", async (req: Request<{}>, res) => {
     ui_mode: "custom",
     expand: ["customer"],
   });
+  console.log(
+    `${requestId}:${new Date().toISOString()}: finished stripe.checkout.sessions.create() from server`
+  );
 
   res.json({ clientSecret: session.client_secret, session: session });
 });
 
+const requestCheckoutSession = async (
+  requestId: string,
+  paymentPageUrl: string
+) => {
+  console.log(
+    `${requestId}:${new Date().toISOString()}: starting GET /v1/payment_pages/cs_test_... from server`
+  );
+  const result = await axios.get(paymentPageUrl, {
+    params: {
+      key: process.env.STRIPE_PK || "",
+    },
+  });
+  console.log(
+    `${requestId}:${new Date().toISOString()}: finished GET /v1/payment_pages/cs_test_... from server (prove we got a successful response: id=${
+      result.data.id
+    })`
+  );
+};
+
 app.post(
   "/setAddress",
-  async (req: Request<{ sessionId: string; address: any }>, res) => {
+  async (
+    req: Request<{
+      sessionId: string;
+      address: any;
+      requestSessionFirst: boolean;
+    }>,
+    res
+  ) => {
     try {
-      const { sessionId, address } = req.body;
+      const requestId = httpContext.get("requestId");
+      const { sessionId, address, requestSessionFirst } = req.body;
+      const paymentPageUrl = `https://api.stripe.com/v1/payment_pages/${sessionId}`;
+      if (requestSessionFirst) {
+        await requestCheckoutSession(requestId, paymentPageUrl);
+      }
+
+      console.log(
+        `${requestId}:${new Date().toISOString()}: starting POST /v1/payment_pages/cs_test_... from server`
+      );
       const params = new URLSearchParams();
       params.append("key", process.env.STRIPE_PK || "");
-      // looks like present but empty isn't allowed?
+      // looks like empty string isn't allowed
+      // we probably need to set present but empty somehow? Not too important for now...
       address.country && params.append("tax_region[country]", address.country);
       address.state && params.append("tax_region[state]", address.state);
       address.zip && params.append("tax_region[postal_code]", address.zip);
@@ -71,11 +114,13 @@ app.post(
       address.line1 && params.append("tax_region[line1]", address.line1);
       // doesn't seem like line2 should be that important but checkout sends it
       address.line2 && params.append("tax_region[line2]", address.line2);
-
       const ppage = await axios.post(
         `https://api.stripe.com/v1/payment_pages/${sessionId}`,
         params.toString(),
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+      );
+      console.log(
+        `${requestId}:${new Date().toISOString()}: finished POST /v1/payment_pages/cs_test_... from server`
       );
 
       res.json({ ppage: ppage.data });

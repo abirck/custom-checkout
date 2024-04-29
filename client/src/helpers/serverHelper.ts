@@ -43,10 +43,15 @@ export const fetchCheckout = async (): Promise<{
   throw new Error(`Unexpected status from /checkout: ${status}`);
 };
 
-export const setAddress = async (
-  sessionId: string,
-  address: Address
-): Promise<{ ppage: any }> => {
+export const setAddress = async ({
+  sessionId,
+  address,
+  requestSessionFirst,
+}: {
+  sessionId: string;
+  address: Address;
+  requestSessionFirst: boolean;
+}): Promise<{ ppage: any }> => {
   const startTime = performance.now();
   console.info(`${new Date().toISOString()}: starting POST /setAddress`);
   const res = await fetch(`/setAddress`, {
@@ -59,7 +64,7 @@ export const setAddress = async (
     },
     redirect: "follow",
     referrerPolicy: "no-referrer",
-    body: JSON.stringify({ sessionId, address }),
+    body: JSON.stringify({ sessionId, address, requestSessionFirst }),
   });
   const endTime = performance.now();
   const elapsedTime = endTime - startTime;
