@@ -8,7 +8,10 @@ const PayButton = () => {
   const handleClick = async () => {
     setLoading(true);
     try {
-      await confirm();
+      const res = await confirm();
+      // initially I assumed this was success but I was incorrect
+      // need to figure out how to really detect success and show
+      // appropriate error message
       window.alert("payment success!");
     } catch (e) {
       window.alert(`payment error: ${e.message}`);

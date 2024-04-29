@@ -1,9 +1,13 @@
 import React, { ReactNode } from "react";
-import { Address } from "../components/AddressInput";
+import { type Address } from "../components/AddressInput";
+import { setAddress } from "../helpers/serverHelper";
+import { type LineItem, type TaxAmount } from "../components/LineItems";
 
 export type MyCheckoutSession = {
   sessionId: string;
   shippingAddress: Address;
+  lineItems: LineItem[];
+  total: number;
 };
 
 type MyCheckoutSessionContextType = {
@@ -20,46 +24,51 @@ export const MyCheckoutSessionContext =
   });
 
 type MyCheckoutSessionProviderProps = {
-  initialCheckoutSession: any;
+  checkoutSessionApiResource: any;
   children?: ReactNode;
-};
-
-const setAddress = async (
-  sessionId: string,
-  address: Address
-): Promise<{ ppage: any }> => {
-  const res = await fetch(`/setAddress`, {
-    method: "POST",
-    mode: "cors",
-    cache: "no-cache",
-    credentials: "same-origin",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    redirect: "follow",
-    referrerPolicy: "no-referrer",
-    body: JSON.stringify({ sessionId, address }),
-  });
-
-  if (res.status === 200) {
-    return await res.json();
-  } else {
-    throw new Error("Error setting address on server");
-  }
 };
 
 // necessary because session doesn't contain in-progress shipping
 // address so we just megre in the address we sent to the server
 const parsePaymentPageAndMergeAddress = (address: Address, ppage: any) => {
+  const { total } = ppage.line_item_group;
+  const lineItems = ppage.line_item_group.line_items.map(
+    (item: any): LineItem => {
+      return {
+        name: item.name,
+        amountSubtotal: item.subtotal,
+        taxAmounts: item.tax_amounts.map((tax: any): TaxAmount => {
+          return {
+            amount: tax.amount,
+            displayName: tax.tax_rate.display_name,
+            inclusive: tax.inclusive,
+          };
+        }),
+      };
+    }
+  );
   return {
     sessionId: ppage.session_id,
     shippingAddress: address,
+    lineItems,
+    total,
   };
 };
 
 const parseCheckoutSession = (session: any): MyCheckoutSession => {
   const { shipping } = session.customer;
   const { address } = shipping;
+  // lame we're just hard coding this but the cehckout session returned by 'create'
+  // doesn't list any line items and I haven't bothered to make my own `init` call
+  // so just pretend this data came from the server
+  const lineItems: LineItem[] = [
+    {
+      name: "Sixty Dollar Product",
+      amountSubtotal: 6000,
+      taxAmounts: [],
+    },
+  ];
+  const total = 6000;
   return {
     sessionId: session.id,
     shippingAddress: {
@@ -71,11 +80,13 @@ const parseCheckoutSession = (session: any): MyCheckoutSession => {
       state: address.state,
       zip: address.postal_code,
     },
+    lineItems: [],
+    total,
   };
 };
 
 export const MyCheckoutSessionProvider = ({
-  initialCheckoutSession,
+  checkoutSessionApiResource,
   children,
 }: MyCheckoutSessionProviderProps) => {
   const [checkoutSession, setCheckoutSession] =
@@ -90,11 +101,8 @@ export const MyCheckoutSessionProvider = ({
   };
 
   React.useEffect(() => {
-    // just assume initial session is always there
-    if (initialCheckoutSession) {
-      setCheckoutSession(parseCheckoutSession(initialCheckoutSession));
-    }
-  }, []);
+    setCheckoutSession(parseCheckoutSession(checkoutSessionApiResource));
+  }, [checkoutSessionApiResource]);
 
   return (
     <MyCheckoutSessionContext.Provider

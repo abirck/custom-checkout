@@ -65,9 +65,8 @@ app.post(
       params.append("tax_region[line1]", address.line1);
       if (address.line2) {
         // doesn't seem like line2 should be that important but checkout sends it
-      params.append("tax_region[line2]", address.line2);
+        params.append("tax_region[line2]", address.line2);
       }
-
 
       const ppage = await axios.post(
         `https://api.stripe.com/v1/payment_pages/${sessionId}`,

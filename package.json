@@ -5,6 +5,7 @@
   "description": "Template for Langchain Node.js projects using Langchain deployed on Fly.io",
   "main": "./index.js",
   "dependencies": {
+    "@headlessui/react": "^1.7.19",
     "@types/bluebird": "^3.5.38",
     "@types/grecaptcha": "^3.0.8",
     "@types/node": "^18.16.3",

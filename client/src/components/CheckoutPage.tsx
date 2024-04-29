@@ -1,9 +1,15 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import { loadStripe } from "@stripe/stripe-js";
 import { CustomCheckoutProvider } from "@stripe/react-stripe-js";
 import CheckoutForm from "./CheckoutForm";
 import { MyCheckoutSessionProvider } from "../providers/MyCheckoutSessionProvider";
+import { fetchCheckout } from "../helpers/serverHelper";
+import DebugPanel from "./DebugPanel";
+import DebugSettingsProvider, {
+  type DebugSettings,
+} from "../providers/DebugSettingsProvider";
+
 const stripe = loadStripe("pk_test_FdYoaC1weOBHn0jv0KvgbHQZ", {
   betas: ["custom_checkout_beta_2"],
 });
@@ -11,46 +17,28 @@ const stripe = loadStripe("pk_test_FdYoaC1weOBHn0jv0KvgbHQZ", {
 const CheckoutPage: React.FC<{ className?: string }> = ({ className }) => {
   const [isFetching, setIsFetching] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [initialCheckoutSession, setInitialCheckoutSession] = useState<
-    any | null
-  >(null);
+  const [checkoutSession, setCheckoutSession] = useState<any | null>(null);
+  const [debugSettings, setDebugSettings] = React.useState<DebugSettings>({
+    shippingAddressDataSource: "my_checkout",
+    lineItemsDataSource: "my_checkout",
+  });
 
-  const doFetch = async () => {
+  const getNewCheckoutSession = async () => {
+    setIsFetching(true);
     try {
-      const res = await fetch(`/checkout`, {
-        method: "POST",
-        mode: "cors",
-        cache: "no-cache",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        redirect: "follow",
-        referrerPolicy: "no-referrer",
-        body: JSON.stringify({}),
-      });
-
-      if (res.status === 200) {
-        const json = await res.json();
-        if (json.clientSecret) {
-          setClientSecret(json.clientSecret);
-          setInitialCheckoutSession(json.session);
-        } else {
-          console.log(`Unexpected response: ${JSON.stringify(json)}`);
-        }
-      }
-    } catch (err) {
-      console.log(`fetch error: ${err}`);
+      const { clientSecret, session } = await fetchCheckout();
+      setClientSecret(clientSecret);
+      setCheckoutSession(session);
+    } finally {
+      setIsFetching(false);
     }
-
-    setIsFetching(false);
   };
 
-  if (!clientSecret || !initialCheckoutSession) {
-    if (!isFetching) {
-      doFetch();
-      setIsFetching(true);
-    }
+  React.useEffect(() => {
+    getNewCheckoutSession();
+  }, [debugSettings]);
+
+  if (isFetching || !clientSecret || !checkoutSession) {
     return (
       <div className="h-screen flex items-center justify-center">
         <LoadingSpinner className="content-center" />
@@ -62,13 +50,22 @@ const CheckoutPage: React.FC<{ className?: string }> = ({ className }) => {
     <div className={className}>
       <div className="pb-12 space-y-12">
         <div className="col-span-full">
-          <MyCheckoutSessionProvider
-            initialCheckoutSession={initialCheckoutSession}
+          <DebugSettingsProvider
+            debugSettings={debugSettings}
+            setDebugSettings={setDebugSettings}
           >
-            <CustomCheckoutProvider stripe={stripe} options={{ clientSecret }}>
-              <CheckoutForm />
-            </CustomCheckoutProvider>
-          </MyCheckoutSessionProvider>
+            <MyCheckoutSessionProvider
+              checkoutSessionApiResource={checkoutSession}
+            >
+              <CustomCheckoutProvider
+                stripe={stripe}
+                options={{ clientSecret }}
+              >
+                <DebugPanel />
+                <CheckoutForm />
+              </CustomCheckoutProvider>
+            </MyCheckoutSessionProvider>
+          </DebugSettingsProvider>
         </div>
       </div>
     </div>
