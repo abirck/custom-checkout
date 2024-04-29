@@ -4,7 +4,6 @@ import {
   DebugSettings,
   DebugSettingsContext,
   ShippingAddressDataSource,
-  LineItemsDataSource,
 } from "../providers/DebugSettingsProvider";
 import Select, { SelectOption } from "./Select";
 
@@ -15,7 +14,6 @@ const areDebugSettingsEqual = (
   return (
     settings1.shippingAddressDataSource ===
     settings2.shippingAddressDataSource &&
-    settings1.lineItemsDataSource === settings2.lineItemsDataSource &&
     settings1.retrieveAfterUpdateForMyCheckout ===
     settings2.retrieveAfterUpdateForMyCheckout &&
     settings1.updateValidishAddressesOnly ===
@@ -37,22 +35,10 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
       },
       {
         key: 1,
-        text: "My Checkout",
+        text: "My Hacky Update Hook",
         value: "my_checkout",
       },
     ];
-  const lineItemsDataSourceOptions: SelectOption<LineItemsDataSource>[] = [
-    {
-      key: 0,
-      text: "Custom Checkout",
-      value: "custom_checkout",
-    },
-    {
-      key: 1,
-      text: "My Checkout",
-      value: "my_checkout",
-    },
-  ];
 
   const [slideOverOpen, setSlideOverOpen] = useState(false);
   const { debugSettings, setDebugSettings } =
@@ -63,8 +49,6 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
     React.useState<ShippingAddressDataSource>(
       debugSettings.shippingAddressDataSource
     );
-  const [lineItemsDataSource, setLineItemsDataSource] =
-    React.useState<LineItemsDataSource>(debugSettings.lineItemsDataSource);
   const [
     retrieveAfterUpdateForMyCheckout,
     setRetrieveAfterUpdateForMyCheckout,
@@ -112,7 +96,6 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
     // if closing set new settings
     const newSettings: DebugSettings = {
       shippingAddressDataSource,
-      lineItemsDataSource,
       retrieveAfterUpdateForMyCheckout,
       updateValidishAddressesOnly,
       requestPaymentPageFirstOnUpdate,
@@ -145,16 +128,10 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
         <div className="space-y-4">
           <span>(Close to have new settings take effect)</span>
           <Select
-            label="Shipping Address Data Source"
+            label="Data Source For Controls"
             options={shippingAddressDataSourceOptions}
             selected={shippingAddressDataSource}
             setSelected={setShippingAddressDataSource}
-          />
-          <Select
-            label="Line Items Data Source"
-            options={lineItemsDataSourceOptions}
-            selected={lineItemsDataSource}
-            setSelected={setLineItemsDataSource}
           />
           <div className="relative flex items-start">
             <div className="flex h-6 items-center">

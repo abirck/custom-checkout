@@ -26,12 +26,12 @@ const LineItems = () => {
 
   React.useEffect(() => {
     if (
-      debugSettings.lineItemsDataSource === "my_checkout" &&
+      debugSettings.shippingAddressDataSource === "my_checkout" &&
       checkoutSession
     ) {
       setLineItems(checkoutSession.lineItems);
       setTotal(checkoutSession.total);
-    } else if (debugSettings.lineItemsDataSource === "custom_checkout") {
+    } else if (debugSettings.shippingAddressDataSource === "custom_checkout") {
       setLineItems(customCheckoutLineItems);
       setTotal(customCheckoutTotal.total);
     }

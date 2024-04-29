@@ -22,7 +22,6 @@ const CheckoutPage: React.FC<{ className?: string }> = ({ className }) => {
   const [checkoutSession, setCheckoutSession] = useState<any | null>(null);
   const [debugSettings, setDebugSettings] = React.useState<DebugSettings>({
     shippingAddressDataSource: "my_checkout",
-    lineItemsDataSource: "my_checkout",
     retrieveAfterUpdateForMyCheckout: true,
     updateValidishAddressesOnly: true,
     requestPaymentPageFirstOnUpdate: true,
