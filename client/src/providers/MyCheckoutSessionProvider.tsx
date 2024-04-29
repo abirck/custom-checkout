@@ -1,6 +1,5 @@
 import React, { ReactNode } from "react";
 import { type Address } from "../components/AddressInput";
-import { setAddress } from "../helpers/serverHelper";
 import { type LineItem, type TaxAmount } from "../components/LineItems";
 
 export type MyCheckoutSession = {
@@ -12,13 +11,13 @@ export type MyCheckoutSession = {
 
 type MyCheckoutSessionContextType = {
   checkoutSession: MyCheckoutSession | null;
-  setAddressOnServer: (address: Address) => Promise<void>;
+  setCheckoutSession: React.Dispatch<React.SetStateAction<MyCheckoutSession | null>>;
 };
 
 export const MyCheckoutSessionContext =
   React.createContext<MyCheckoutSessionContextType>({
     checkoutSession: null,
-    setAddressOnServer: () => {
+    setCheckoutSession: () => {
       return Promise.resolve();
     },
   });
@@ -26,33 +25,6 @@ export const MyCheckoutSessionContext =
 type MyCheckoutSessionProviderProps = {
   checkoutSessionApiResource: any;
   children?: ReactNode;
-};
-
-// necessary because session doesn't contain in-progress shipping
-// address so we just megre in the address we sent to the server
-const parsePaymentPageAndMergeAddress = (address: Address, ppage: any) => {
-  const { total } = ppage.line_item_group;
-  const lineItems = ppage.line_item_group.line_items.map(
-    (item: any): LineItem => {
-      return {
-        name: item.name,
-        amountSubtotal: item.subtotal,
-        taxAmounts: item.tax_amounts.map((tax: any): TaxAmount => {
-          return {
-            amount: tax.amount,
-            displayName: tax.tax_rate.display_name,
-            inclusive: tax.inclusive,
-          };
-        }),
-      };
-    }
-  );
-  return {
-    sessionId: ppage.session_id,
-    shippingAddress: address,
-    lineItems,
-    total,
-  };
 };
 
 const parseCheckoutSession = (session: any): MyCheckoutSession => {
@@ -92,21 +64,13 @@ export const MyCheckoutSessionProvider = ({
   const [checkoutSession, setCheckoutSession] =
     React.useState<MyCheckoutSession | null>(null);
 
-  const setAddressOnServer = async (address: Address) => {
-    if (!checkoutSession?.sessionId) {
-      return;
-    }
-    const res = await setAddress(checkoutSession.sessionId, address);
-    setCheckoutSession(parsePaymentPageAndMergeAddress(address, res.ppage));
-  };
-
   React.useEffect(() => {
     setCheckoutSession(parseCheckoutSession(checkoutSessionApiResource));
   }, [checkoutSessionApiResource]);
 
   return (
     <MyCheckoutSessionContext.Provider
-      value={{ checkoutSession, setAddressOnServer }}
+      value={{ checkoutSession, setCheckoutSession }}
     >
       {children}
     </MyCheckoutSessionContext.Provider>

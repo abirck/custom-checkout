@@ -1,9 +1,13 @@
-import { Address } from "../components/AddressInput";
+import { type Address } from "../components/AddressInput";
+import { type LineItem, type TaxAmount } from "../components/LineItems";
 
 export const fetchCheckout = async (): Promise<{
   clientSecret: string;
   session: any;
 }> => {
+  const startTime = performance.now();
+  console.info(`${new Date().toISOString()}: starting POST /checkout`);
+  console.time('POST /checkout'); 
   const res = await fetch(`/checkout`, {
     method: "POST",
     mode: "cors",
@@ -16,6 +20,9 @@ export const fetchCheckout = async (): Promise<{
     referrerPolicy: "no-referrer",
     body: JSON.stringify({}),
   });
+  const endTime = performance.now();
+  const elapsedTime = endTime - startTime;
+  console.info(`${new Date().toISOString()}: finished POST /checkout (${elapsedTime.toFixed(3)} ms)`);
 
   if (res.status === 200) {
     const json = await res.json();
@@ -23,7 +30,7 @@ export const fetchCheckout = async (): Promise<{
     if (clientSecret) {
       return { clientSecret, session };
     } else {
-      console.log(
+      console.error(
         `Unexpected response  from /checkout: ${JSON.stringify(json)}`
       );
     }
@@ -36,6 +43,8 @@ export const setAddress = async (
   sessionId: string,
   address: Address
 ): Promise<{ ppage: any }> => {
+  const startTime = performance.now();
+  console.info(`${new Date().toISOString()}: starting POST /setAddress`);
   const res = await fetch(`/setAddress`, {
     method: "POST",
     mode: "cors",
@@ -48,10 +57,42 @@ export const setAddress = async (
     referrerPolicy: "no-referrer",
     body: JSON.stringify({ sessionId, address }),
   });
+  const endTime = performance.now();
+  const elapsedTime = endTime - startTime;
+  console.info(`${new Date().toISOString()}: finished POST /setAddress (${elapsedTime.toFixed(3)} ms)`);
 
   if (res.status === 200) {
     return await res.json();
   } else {
     throw new Error(`/setAddress return status: ${res.status}`);
   }
+};
+
+
+
+// taking the address as a param here is necessary because session doesn't contain in-progress shipping
+// address so we just megre in the address we sent to the server
+export const parsePaymentPageAndMergeAddress = (address: Address, ppage: any) => {
+  const { total } = ppage.line_item_group;
+  const lineItems = ppage.line_item_group.line_items.map(
+    (item: any): LineItem => {
+      return {
+        name: item.name,
+        amountSubtotal: item.subtotal,
+        taxAmounts: item.tax_amounts.map((tax: any): TaxAmount => {
+          return {
+            amount: tax.amount,
+            displayName: tax.tax_rate.display_name,
+            inclusive: tax.inclusive,
+          };
+        }),
+      };
+    }
+  );
+  return {
+    sessionId: ppage.session_id,
+    shippingAddress: address,
+    lineItems,
+    total,
+  };
 };

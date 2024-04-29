@@ -27,13 +27,9 @@ const LineItems = () => {
 
   React.useEffect(() => {
     if (debugSettings.lineItemsDataSource === "my_checkout" && checkoutSession) {
-      console.log(
-        "reloading line items from server response (my checkout)"
-      );
       setLineItems(checkoutSession.lineItems);
       setTotal(checkoutSession.total);
     } else if (debugSettings.lineItemsDataSource === "custom_checkout") {
-      console.log("reloading shipping address from custom checkout");
       setLineItems(customCheckoutLineItems);
       setTotal(customCheckoutTotal.total);
     }

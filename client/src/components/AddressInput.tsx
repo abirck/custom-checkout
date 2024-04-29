@@ -3,6 +3,12 @@ import { MyCheckoutSessionContext } from "../providers/MyCheckoutSessionProvider
 import { useCustomCheckout } from "@stripe/react-stripe-js";
 import { DebugSettingsContext } from "../providers/DebugSettingsProvider";
 
+type AddressInputProps = {
+  disabled?: boolean;
+  // right now only fires when address is valid. Should make this a debug option
+  onShippingAddressChanged?(address: Address): Promise<void>;
+};
+
 export type Address = {
   name: string;
   line1: string;
@@ -35,11 +41,11 @@ const areAddressesEqual = (address1: Address, address2: Address): boolean => {
   );
 };
 
-const AddressInput = ({ disabled }: { disabled?: boolean }) => {
-  const { checkoutSession, setAddressOnServer } = React.useContext(
+const AddressInput = ({ disabled, onShippingAddressChanged }: AddressInputProps) => {
+  const { checkoutSession } = React.useContext(
     MyCheckoutSessionContext
   );
-  const { shippingAddress, updateShippingAddress } = useCustomCheckout();
+  const { shippingAddress: customCheckoutShippingAddress, updateShippingAddress } = useCustomCheckout();
   const { debugSettings } = React.useContext(DebugSettingsContext);
 
   if (!checkoutSession) {
@@ -54,61 +60,8 @@ const AddressInput = ({ disabled }: { disabled?: boolean }) => {
   const [country, setCountry] = React.useState("");
   const [zip, setZip] = React.useState("");
 
-  const setAddress = (address: Address) => {
-    // update on our server
-    setAddressOnServer(address);
-
-    // and set locally on the client or else we won't be able to finish the
-    // session since we don't have an API to set on server side yet
-    const customCheckoutAddress = {
-      name: address.name,
-      address: {
-        country: address.country,
-        city: address.city,
-        line1: address.line1,
-        line2: address.line2,
-        state: address.state,
-        postal_code: address.zip,
-      },
-    };
-    updateShippingAddress(customCheckoutAddress);
-  };
-
-  // whenever we get an update from the server make sure it's reflected here
-  React.useEffect(() => {
-    if (debugSettings.shippingAddressDataSource === "my_checkout") {
-      console.log(
-        "reloading shipping address from server response (my checkout)"
-      );
-      setName(checkoutSession.shippingAddress.name);
-      setLine1(checkoutSession.shippingAddress.line1);
-      setLine2(checkoutSession.shippingAddress.line2);
-      setCity(checkoutSession.shippingAddress.city);
-      setState(checkoutSession.shippingAddress.state);
-      setCountry(checkoutSession.shippingAddress.country);
-      setZip(checkoutSession.shippingAddress.zip);
-    } else if (debugSettings.shippingAddressDataSource === "custom_checkout") {
-      console.log("reloading shipping address from custom checkout");
-      setName(shippingAddress?.name || "");
-      setLine1(shippingAddress?.address.line1 || "");
-      setLine2(shippingAddress?.address.line2 || "");
-      setCity(shippingAddress?.address.city || "");
-      setState(shippingAddress?.address.state || "");
-      setCountry(shippingAddress?.address.country || "");
-      setZip(shippingAddress?.address.zip || "");
-    }
-  }, [shippingAddress, checkoutSession, debugSettings]);
-
-  // it looks like checkout session gets tax calculated up front by immediately posting a region
-  // update to the server on load so I guess we should do the same thing
-  React.useEffect(() => {
-    if (addressLooksValidish(checkoutSession.shippingAddress)) {
-      setAddress(checkoutSession.shippingAddress);
-    }
-  }, []);
-
-  const sendOnChange = (override?: any) => {
-    const newAddress = {
+  const getCurrentAddress = (overrides?: any): Address => {
+    return {
       name,
       line1,
       line2,
@@ -116,51 +69,113 @@ const AddressInput = ({ disabled }: { disabled?: boolean }) => {
       state,
       country,
       zip,
-      ...override,
+      ...overrides,
     };
+  }
+
+  const handleAddressChange = async (newAddress: Address) => {
+    // always update custom checkout since these values stay on the client
+    // and we need to fill out shipping address to be able to confirm
+    const customCheckoutAddress = {
+      name: newAddress.name,
+      address: {
+        country: newAddress.country,
+        city: newAddress.city,
+        line1: newAddress.line1,
+        line2: newAddress.line2,
+        state: newAddress.state,
+        postal_code: newAddress.zip,
+      },
+    };
+    updateShippingAddress(customCheckoutAddress);
+
+    // update on our server
     if (
-      checkoutSession &&
-      !areAddressesEqual(newAddress, checkoutSession.shippingAddress) &&
+
       addressLooksValidish(newAddress)
     ) {
-      setAddress(newAddress);
+      if (onShippingAddressChanged) {
+        await onShippingAddressChanged(newAddress);
+      }
     }
   };
+
+  // whenever we get an update from the server make sure it's reflected here
+  React.useEffect(() => {
+    const currentAddress = getCurrentAddress();
+    if (debugSettings.shippingAddressDataSource === "my_checkout" &&
+      !areAddressesEqual(currentAddress, checkoutSession.shippingAddress)
+    ) {
+      setName(checkoutSession.shippingAddress.name);
+      setLine1(checkoutSession.shippingAddress.line1);
+      setLine2(checkoutSession.shippingAddress.line2);
+      setCity(checkoutSession.shippingAddress.city);
+      setState(checkoutSession.shippingAddress.state);
+      setCountry(checkoutSession.shippingAddress.country);
+      setZip(checkoutSession.shippingAddress.zip);
+    } else if (debugSettings.shippingAddressDataSource === "custom_checkout" && customCheckoutShippingAddress) {
+      const { name, address } = customCheckoutShippingAddress;
+      const customCheckoutAddress: Address = {
+        name: name || "",
+        line1: address.line1 || "",
+        line2: address.line2 || "",
+        city: address.city || "",
+        state: address.state || "",
+        country: address.country || "",
+        zip: address.postal_code || "",
+      };
+      if (!areAddressesEqual(currentAddress, customCheckoutAddress)) {
+        setName(customCheckoutAddress.name);
+        setLine1(customCheckoutAddress.line1);
+        setLine2(customCheckoutAddress.line2);
+        setCity(customCheckoutAddress.city);
+        setState(customCheckoutAddress.state);
+        setCountry(customCheckoutAddress.country);
+        setZip(customCheckoutAddress.zip);
+      }
+    }
+  }, [customCheckoutShippingAddress, checkoutSession, debugSettings]);
+
+  // it looks like checkout session gets tax calculated up front by immediately posting a region
+  // update to the server on load so I guess we should do the same thing
+  React.useEffect(() => {
+    handleAddressChange(checkoutSession.shippingAddress);
+  }, []);
 
   const handleNameChange = (e: { target: { value: string } }) => {
     const newName = e.target.value;
     setName(newName);
-    sendOnChange({ name: newName });
+    handleAddressChange(getCurrentAddress({ name: newName }));
   };
 
   const handleLine1Change = (e: { target: { value: string } }) => {
     const newLine1 = e.target.value;
     setLine1(newLine1);
-    sendOnChange({ line1: newLine1 });
+    handleAddressChange(getCurrentAddress({ line1: newLine1 }));
   };
 
   const handleLine2Change = (e: { target: { value: string } }) => {
     const newLine2 = e.target.value;
     setLine2(newLine2);
-    sendOnChange({ line2: newLine2 });
+    handleAddressChange(getCurrentAddress({ line2: newLine2 }));
   };
 
   const handleCityChange = (e: { target: { value: string } }) => {
     const newCity = e.target.value;
     setCity(newCity);
-    sendOnChange({ city: newCity });
+    handleAddressChange(getCurrentAddress({ city: newCity }));
   };
 
   const handleStateChange = (e: { target: { value: string } }) => {
     const newState = e.target.value;
     setState(newState);
-    sendOnChange({ state: newState });
+    handleAddressChange(getCurrentAddress({ state: newState }));
   };
 
   const handleZipChange = (e: { target: { value: string } }) => {
     const newZip = e.target.value;
     setZip(newZip);
-    sendOnChange({ zip: newZip });
+    handleAddressChange(getCurrentAddress({ zip: newZip }));
   };
 
   return (

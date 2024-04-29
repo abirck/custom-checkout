@@ -6,6 +6,7 @@ export type LineItemsDataSource = "custom_checkout" | "my_checkout";
 export type DebugSettings = {
   shippingAddressDataSource: ShippingAddressDataSource;
   lineItemsDataSource: LineItemsDataSource;
+  retrieveAfterUpdateForMyCheckout: boolean;
 };
 
 type DebugSettingsContextType = {
@@ -18,6 +19,7 @@ export const DebugSettingsContext =
     debugSettings: {
       shippingAddressDataSource: "my_checkout",
       lineItemsDataSource: "my_checkout",
+      retrieveAfterUpdateForMyCheckout: true,
     },
     setDebugSettings: () => {
       return Promise.resolve();

@@ -23,6 +23,7 @@ const CheckoutPage: React.FC<{ className?: string }> = ({ className }) => {
   const [debugSettings, setDebugSettings] = React.useState<DebugSettings>({
     shippingAddressDataSource: "my_checkout",
     lineItemsDataSource: "my_checkout",
+    retrieveAfterUpdateForMyCheckout: true,
   });
 
   const getNewCheckoutSession = async () => {
