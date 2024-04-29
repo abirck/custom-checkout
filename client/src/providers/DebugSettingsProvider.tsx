@@ -9,6 +9,7 @@ export type DebugSettings = {
   retrieveAfterUpdateForMyCheckout: boolean;
   updateValidishAddressesOnly: boolean;
   requestPaymentPageFirstOnUpdate: boolean;
+  debounceServerUpdateRequests: boolean;
 };
 
 type DebugSettingsContextType = {
@@ -24,6 +25,7 @@ export const DebugSettingsContext =
       retrieveAfterUpdateForMyCheckout: true,
       updateValidishAddressesOnly: true,
       requestPaymentPageFirstOnUpdate: true,
+      debounceServerUpdateRequests: true,
     },
     setDebugSettings: () => {
       return Promise.resolve();

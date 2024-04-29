@@ -14,14 +14,16 @@ const areDebugSettingsEqual = (
 ): boolean => {
   return (
     settings1.shippingAddressDataSource ===
-      settings2.shippingAddressDataSource &&
+    settings2.shippingAddressDataSource &&
     settings1.lineItemsDataSource === settings2.lineItemsDataSource &&
     settings1.retrieveAfterUpdateForMyCheckout ===
-      settings2.retrieveAfterUpdateForMyCheckout &&
+    settings2.retrieveAfterUpdateForMyCheckout &&
     settings1.updateValidishAddressesOnly ===
-      settings2.updateValidishAddressesOnly &&
+    settings2.updateValidishAddressesOnly &&
     settings1.requestPaymentPageFirstOnUpdate ===
-      settings2.requestPaymentPageFirstOnUpdate
+    settings2.requestPaymentPageFirstOnUpdate &&
+    settings1.debounceServerUpdateRequests ===
+    settings2.debounceServerUpdateRequests
   );
 };
 
@@ -55,6 +57,8 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
   const [slideOverOpen, setSlideOverOpen] = useState(false);
   const { debugSettings, setDebugSettings } =
     React.useContext(DebugSettingsContext);
+
+  // a lot of boiler plate here, I'm sure this could be cleaned up
   const [shippingAddressDataSource, setShippingAddressDataSource] =
     React.useState<ShippingAddressDataSource>(
       debugSettings.shippingAddressDataSource
@@ -69,6 +73,8 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
     React.useState<boolean>(debugSettings.updateValidishAddressesOnly);
   const [requestPaymentPageFirstOnUpdate, setRequestPaymentPageFirstOnUpdate] =
     React.useState<boolean>(debugSettings.requestPaymentPageFirstOnUpdate);
+  const [debounceServerUpdateRequests, setDebounceServerUpdateRequests] =
+    React.useState<boolean>(debugSettings.debounceServerUpdateRequests);
 
   const handleDebugButtonClick = () => {
     setSlideOverOpen(true);
@@ -95,6 +101,13 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
     setRequestPaymentPageFirstOnUpdate(selected);
   };
 
+  const handleDebounceServerUpdateRequestsChange = (e: {
+    target: { checked: boolean };
+  }) => {
+    const selected = e.target.checked;
+    setDebounceServerUpdateRequests(selected);
+  };
+
   React.useEffect(() => {
     // if closing set new settings
     const newSettings: DebugSettings = {
@@ -103,6 +116,7 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
       retrieveAfterUpdateForMyCheckout,
       updateValidishAddressesOnly,
       requestPaymentPageFirstOnUpdate,
+      debounceServerUpdateRequests,
     };
     if (!slideOverOpen && !areDebugSettingsEqual(debugSettings, newSettings)) {
       console.log(
@@ -203,6 +217,27 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
               >
                 When making an update request from the merchant server, should
                 we request the page from Stripe before modifying?
+              </label>
+            </div>
+          </div>
+          <div className="relative flex items-start">
+            <div className="flex h-6 items-center">
+              <input
+                id="debounceServerUpdateRequests"
+                aria-describedby="comments-description"
+                name="debounceServerUpdateRequests"
+                type="checkbox"
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                checked={debounceServerUpdateRequests}
+                onChange={handleDebounceServerUpdateRequestsChange}
+              />
+            </div>
+            <div className="ml-3 text-sm leading-6">
+              <label
+                htmlFor="debounceServerUpdateRequests"
+                className="font-medium text-gray-900"
+              >
+                Should we debounce updates coming from update handler?
               </label>
             </div>
           </div>

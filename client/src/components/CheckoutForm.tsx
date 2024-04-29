@@ -11,19 +11,56 @@ import {
 } from "../helpers/serverHelper";
 import { DebugSettingsContext } from "../providers/DebugSettingsProvider";
 
+const DEBOUNCE_MS = 200;
+
 const CheckoutForm = () => {
   const { checkoutSession, setCheckoutSession } = React.useContext(
     MyCheckoutSessionContext
   );
   const { debugSettings } = React.useContext(DebugSettingsContext);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
 
-  const handleAddressChange = async (address: Address) => {
+  React.useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    }
+  }, []);
+
+  function debounce(fn) {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        fn.apply(this, args);
+      }, DEBOUNCE_MS);
+    };
+  }
+
+  const debouncedSendServerNewAddress = debounce(async ({ address }: { address: Address }) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort(); // Cancel any in-flight request
+    }
+
+    abortControllerRef.current = new AbortController();
+    try {
+      sendServerNewAddress({ address, abortController: abortControllerRef.current });
+    } catch (err) {
+      // I think cancelled requests should end up here but they're not? Eh, look into it later
+      console.error(`error sending new shipping address to server: ${err}`);
+    }
+  });
+
+
+  const sendServerNewAddress = async ({ address, abortController }: { address: Address, abortController?: AbortController }) => {
     if (checkoutSession?.sessionId) {
       // this method will handle updating the checkout session state with the response
       const res = await setAddress({
         sessionId: checkoutSession.sessionId,
         address,
         requestSessionFirst: debugSettings.requestPaymentPageFirstOnUpdate,
+        abortController,
       });
       if (debugSettings.retrieveAfterUpdateForMyCheckout) {
         // this is where we should simulate custom checkout refreshing from Stripe because we've resolved our "onAddressChange"
@@ -51,6 +88,16 @@ const CheckoutForm = () => {
       }
     }
   };
+
+  const handleAddressChange = async (address: Address) => {
+    console.log(`debugSettings.debounceServerUpdateRequests: ${debugSettings.debounceServerUpdateRequests}`)
+    if (debugSettings.debounceServerUpdateRequests) {
+      debouncedSendServerNewAddress({ address });
+    } else {
+      await sendServerNewAddress({ address });
+    }
+  };
+
   return (
     <form>
       <div className="grid grid-cols-2 gap-4">

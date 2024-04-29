@@ -26,6 +26,7 @@ const CheckoutPage: React.FC<{ className?: string }> = ({ className }) => {
     retrieveAfterUpdateForMyCheckout: true,
     updateValidishAddressesOnly: true,
     requestPaymentPageFirstOnUpdate: true,
+    debounceServerUpdateRequests: true,
   });
 
   const getNewCheckoutSession = async () => {

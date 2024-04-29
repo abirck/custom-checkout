@@ -47,14 +47,17 @@ export const setAddress = async ({
   sessionId,
   address,
   requestSessionFirst,
+  abortController
 }: {
   sessionId: string;
   address: Address;
   requestSessionFirst: boolean;
+  abortController?: AbortController | null;
 }): Promise<{ ppage: any }> => {
   const startTime = performance.now();
   console.info(`${new Date().toISOString()}: starting POST /setAddress`);
   const res = await fetch(`/setAddress`, {
+    ... (abortController && { signal: abortController.signal }),
     method: "POST",
     mode: "cors",
     cache: "no-cache",
