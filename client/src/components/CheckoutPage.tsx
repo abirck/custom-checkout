@@ -10,7 +10,9 @@ import DebugSettingsProvider, {
   type DebugSettings,
 } from "../providers/DebugSettingsProvider";
 
-const stripe = loadStripe("pk_test_FdYoaC1weOBHn0jv0KvgbHQZ", {
+const STRIPE_PK = "pk_test_FdYoaC1weOBHn0jv0KvgbHQZ";
+
+const stripe = loadStripe(STRIPE_PK, {
   betas: ["custom_checkout_beta_2"],
 });
 

@@ -5,6 +5,13 @@ import * as path from "path";
 import httpContext from "express-http-context";
 import axios from "axios";
 
+// Trying to keep the info about the customer objects below true but do to customer_update having to 
+// set things change. I should probably take in a customer ID from the frontend and add it to my debug panel
+// customer based in South Carolina (no tax): cus_OpvtuwflO7Q0ae
+// customer based in Washington (tax): cus_PDFSYCl9xNfGw0
+const CUSTOMER = "cus_OpvtuwflO7Q0ae";
+const PRICE = "price_1O9a0SGJIKv4skDIY9jaxHwp";
+
 require("dotenv").config();
 const stripe = require("stripe")(process.env.STRIPE_SK, {
   apiVersion: "2024-04-10; custom_checkout_beta=v1",
@@ -23,19 +30,18 @@ app.use((req, res, next) => {
 });
 
 app.post("/checkout", async (req: Request<{}>, res) => {
-  // customer based in South Carolina (no tax): cus_OpvtuwflO7Q0ae
-  // customer based in Washington (tax): cus_PDFSYCl9xNfGw0
+
   const session = await stripe.checkout.sessions.create({
     automatic_tax: {
       enabled: true,
     },
-    customer: "cus_OpvtuwflO7Q0ae",
+    customer: CUSTOMER,
     customer_update: {
       shipping: "auto",
     },
     line_items: [
       {
-        price: "price_1O9a0SGJIKv4skDIY9jaxHwp",
+        price: PRICE,
         quantity: 1,
       },
     ],
@@ -57,7 +63,7 @@ app.post(
     try {
       const { sessionId, address } = req.body;
       const params = new URLSearchParams();
-      params.append("key", "pk_test_FdYoaC1weOBHn0jv0KvgbHQZ");
+      params.append("key", process.env.STRIPE_PK || '');
       params.append("tax_region[country]", address.country);
       params.append("tax_region[state]", address.state);
       params.append("tax_region[postal_code]", address.zip);
