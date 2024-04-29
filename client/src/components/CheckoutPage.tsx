@@ -24,6 +24,7 @@ const CheckoutPage: React.FC<{ className?: string }> = ({ className }) => {
     shippingAddressDataSource: "my_checkout",
     lineItemsDataSource: "my_checkout",
     retrieveAfterUpdateForMyCheckout: true,
+    updateValidishAddressesOnly: true,
   });
 
   const getNewCheckoutSession = async () => {

@@ -5,7 +5,7 @@ import * as path from "path";
 import httpContext from "express-http-context";
 import axios from "axios";
 
-// Trying to keep the info about the customer objects below true but do to customer_update having to 
+// Trying to keep the info about the customer objects below true but do to customer_update having to
 // set things change. I should probably take in a customer ID from the frontend and add it to my debug panel
 // customer based in South Carolina (no tax): cus_OpvtuwflO7Q0ae
 // customer based in Washington (tax): cus_PDFSYCl9xNfGw0
@@ -30,7 +30,6 @@ app.use((req, res, next) => {
 });
 
 app.post("/checkout", async (req: Request<{}>, res) => {
-
   const session = await stripe.checkout.sessions.create({
     automatic_tax: {
       enabled: true,
@@ -63,16 +62,15 @@ app.post(
     try {
       const { sessionId, address } = req.body;
       const params = new URLSearchParams();
-      params.append("key", process.env.STRIPE_PK || '');
-      params.append("tax_region[country]", address.country);
-      params.append("tax_region[state]", address.state);
-      params.append("tax_region[postal_code]", address.zip);
-      params.append("tax_region[city]", address.city);
-      params.append("tax_region[line1]", address.line1);
-      if (address.line2) {
-        // doesn't seem like line2 should be that important but checkout sends it
-        params.append("tax_region[line2]", address.line2);
-      }
+      params.append("key", process.env.STRIPE_PK || "");
+      // looks like present but empty isn't allowed?
+      address.country && params.append("tax_region[country]", address.country);
+      address.state && params.append("tax_region[state]", address.state);
+      address.zip && params.append("tax_region[postal_code]", address.zip);
+      address.city && params.append("tax_region[city]", address.city);
+      address.line1 && params.append("tax_region[line1]", address.line1);
+      // doesn't seem like line2 should be that important but checkout sends it
+      address.line2 && params.append("tax_region[line2]", address.line2);
 
       const ppage = await axios.post(
         `https://api.stripe.com/v1/payment_pages/${sessionId}`,

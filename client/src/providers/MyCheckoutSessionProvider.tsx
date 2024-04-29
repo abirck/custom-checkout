@@ -11,7 +11,9 @@ export type MyCheckoutSession = {
 
 type MyCheckoutSessionContextType = {
   checkoutSession: MyCheckoutSession | null;
-  setCheckoutSession: React.Dispatch<React.SetStateAction<MyCheckoutSession | null>>;
+  setCheckoutSession: React.Dispatch<
+    React.SetStateAction<MyCheckoutSession | null>
+  >;
 };
 
 export const MyCheckoutSessionContext =

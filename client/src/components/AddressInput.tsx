@@ -41,11 +41,15 @@ const areAddressesEqual = (address1: Address, address2: Address): boolean => {
   );
 };
 
-const AddressInput = ({ disabled, onShippingAddressChanged }: AddressInputProps) => {
-  const { checkoutSession } = React.useContext(
-    MyCheckoutSessionContext
-  );
-  const { shippingAddress: customCheckoutShippingAddress, updateShippingAddress } = useCustomCheckout();
+const AddressInput = ({
+  disabled,
+  onShippingAddressChanged,
+}: AddressInputProps) => {
+  const { checkoutSession } = React.useContext(MyCheckoutSessionContext);
+  const {
+    shippingAddress: customCheckoutShippingAddress,
+    updateShippingAddress,
+  } = useCustomCheckout();
   const { debugSettings } = React.useContext(DebugSettingsContext);
 
   if (!checkoutSession) {
@@ -71,7 +75,7 @@ const AddressInput = ({ disabled, onShippingAddressChanged }: AddressInputProps)
       zip,
       ...overrides,
     };
-  }
+  };
 
   const handleAddressChange = async (newAddress: Address) => {
     // always update custom checkout since these values stay on the client
@@ -91,7 +95,7 @@ const AddressInput = ({ disabled, onShippingAddressChanged }: AddressInputProps)
 
     // update on our server
     if (
-
+      !debugSettings.updateValidishAddressesOnly ||
       addressLooksValidish(newAddress)
     ) {
       if (onShippingAddressChanged) {
@@ -103,7 +107,8 @@ const AddressInput = ({ disabled, onShippingAddressChanged }: AddressInputProps)
   // whenever we get an update from the server make sure it's reflected here
   React.useEffect(() => {
     const currentAddress = getCurrentAddress();
-    if (debugSettings.shippingAddressDataSource === "my_checkout" &&
+    if (
+      debugSettings.shippingAddressDataSource === "my_checkout" &&
       !areAddressesEqual(currentAddress, checkoutSession.shippingAddress)
     ) {
       setName(checkoutSession.shippingAddress.name);
@@ -113,7 +118,15 @@ const AddressInput = ({ disabled, onShippingAddressChanged }: AddressInputProps)
       setState(checkoutSession.shippingAddress.state);
       setCountry(checkoutSession.shippingAddress.country);
       setZip(checkoutSession.shippingAddress.zip);
-    } else if (debugSettings.shippingAddressDataSource === "custom_checkout" && customCheckoutShippingAddress) {
+    }
+  }, [checkoutSession, debugSettings]);
+
+  React.useEffect(() => {
+    const currentAddress = getCurrentAddress();
+    if (
+      debugSettings.shippingAddressDataSource === "custom_checkout" &&
+      customCheckoutShippingAddress
+    ) {
       const { name, address } = customCheckoutShippingAddress;
       const customCheckoutAddress: Address = {
         name: name || "",
@@ -134,7 +147,7 @@ const AddressInput = ({ disabled, onShippingAddressChanged }: AddressInputProps)
         setZip(customCheckoutAddress.zip);
       }
     }
-  }, [customCheckoutShippingAddress, checkoutSession, debugSettings]);
+  }, [customCheckoutShippingAddress, debugSettings]);
 
   // it looks like checkout session gets tax calculated up front by immediately posting a region
   // update to the server on load so I guess we should do the same thing

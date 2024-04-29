@@ -7,6 +7,7 @@ export type DebugSettings = {
   shippingAddressDataSource: ShippingAddressDataSource;
   lineItemsDataSource: LineItemsDataSource;
   retrieveAfterUpdateForMyCheckout: boolean;
+  updateValidishAddressesOnly: boolean;
 };
 
 type DebugSettingsContextType = {
@@ -20,6 +21,7 @@ export const DebugSettingsContext =
       shippingAddressDataSource: "my_checkout",
       lineItemsDataSource: "my_checkout",
       retrieveAfterUpdateForMyCheckout: true,
+      updateValidishAddressesOnly: true,
     },
     setDebugSettings: () => {
       return Promise.resolve();

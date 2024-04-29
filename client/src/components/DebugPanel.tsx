@@ -14,9 +14,12 @@ const areDebugSettingsEqual = (
 ): boolean => {
   return (
     settings1.shippingAddressDataSource ===
-    settings2.shippingAddressDataSource &&
+      settings2.shippingAddressDataSource &&
     settings1.lineItemsDataSource === settings2.lineItemsDataSource &&
-    settings1.retrieveAfterUpdateForMyCheckout === settings2.retrieveAfterUpdateForMyCheckout
+    settings1.retrieveAfterUpdateForMyCheckout ===
+      settings2.retrieveAfterUpdateForMyCheckout &&
+    settings1.updateValidishAddressesOnly ===
+      settings2.updateValidishAddressesOnly
   );
 };
 
@@ -34,19 +37,18 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
         value: "my_checkout",
       },
     ];
-  const lineItemsDataSourceOptions: SelectOption<LineItemsDataSource>[] =
-    [
-      {
-        key: 0,
-        text: "Custom Checkout",
-        value: "custom_checkout",
-      },
-      {
-        key: 1,
-        text: "My Checkout",
-        value: "my_checkout",
-      },
-    ];
+  const lineItemsDataSourceOptions: SelectOption<LineItemsDataSource>[] = [
+    {
+      key: 0,
+      text: "Custom Checkout",
+      value: "custom_checkout",
+    },
+    {
+      key: 1,
+      text: "My Checkout",
+      value: "my_checkout",
+    },
+  ];
 
   const [slideOverOpen, setSlideOverOpen] = useState(false);
   const { debugSettings, setDebugSettings } =
@@ -57,18 +59,29 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
     );
   const [lineItemsDataSource, setLineItemsDataSource] =
     React.useState<LineItemsDataSource>(debugSettings.lineItemsDataSource);
-
-  const [retrieveAfterUpdateForMyCheckout, setRetrieveAfterUpdateForMyCheckout] =
-    React.useState<boolean>(debugSettings.retrieveAfterUpdateForMyCheckout);
-
+  const [
+    retrieveAfterUpdateForMyCheckout,
+    setRetrieveAfterUpdateForMyCheckout,
+  ] = React.useState<boolean>(debugSettings.retrieveAfterUpdateForMyCheckout);
+  const [updateValidishAddressesOnly, setUpdateValidishAddressesOnly] =
+    React.useState<boolean>(debugSettings.updateValidishAddressesOnly);
 
   const handleDebugButtonClick = () => {
     setSlideOverOpen(true);
   };
 
-  const handleRetrieveAfterUpdateForMyCheckoutChange = (e: { target: { checked: boolean } }) => {
+  const handleRetrieveAfterUpdateForMyCheckoutChange = (e: {
+    target: { checked: boolean };
+  }) => {
     const selected = e.target.checked;
     setRetrieveAfterUpdateForMyCheckout(selected);
+  };
+
+  const handleUpdateValidishAddressesOnlyChange = (e: {
+    target: { checked: boolean };
+  }) => {
+    const selected = e.target.checked;
+    setUpdateValidishAddressesOnly(selected);
   };
 
   React.useEffect(() => {
@@ -77,6 +90,7 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
       shippingAddressDataSource,
       lineItemsDataSource,
       retrieveAfterUpdateForMyCheckout,
+      updateValidishAddressesOnly,
     };
     if (!slideOverOpen && !areDebugSettingsEqual(debugSettings, newSettings)) {
       console.log(
@@ -121,7 +135,7 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
               <input
                 id="serverRefresh"
                 aria-describedby="comments-description"
-                name="comments"
+                name="serverRefresh"
                 type="checkbox"
                 className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
                 checked={retrieveAfterUpdateForMyCheckout}
@@ -129,13 +143,37 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
               />
             </div>
             <div className="ml-3 text-sm leading-6">
-              <label htmlFor="serverRefresh" className="font-medium text-gray-900">
+              <label
+                htmlFor="serverRefresh"
+                className="font-medium text-gray-900"
+              >
                 Refresh state from Stripe after finishing update hook
               </label>
             </div>
           </div>
+          <div className="relative flex items-start">
+            <div className="flex h-6 items-center">
+              <input
+                id="addressUpdateFrequency"
+                aria-describedby="comments-description"
+                name="addressUpdateFrequency"
+                type="checkbox"
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                checked={updateValidishAddressesOnly}
+                onChange={handleUpdateValidishAddressesOnlyChange}
+              />
+            </div>
+            <div className="ml-3 text-sm leading-6">
+              <label
+                htmlFor="addressUpdateFrequency"
+                className="font-medium text-gray-900"
+              >
+                Update server address on valid-ish addresses only
+              </label>
+            </div>
+          </div>
         </div>
-      </SlideOver >
+      </SlideOver>
     </>
   );
 };

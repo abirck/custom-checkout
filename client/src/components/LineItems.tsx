@@ -19,21 +19,28 @@ export type LineItem = {
 const LineItems = () => {
   const [lineItems, setLineItems] = React.useState<LineItem[] | null>([]);
   const [total, setTotal] = React.useState<number>(0);
-  const { lineItems: customCheckoutLineItems, total: customCheckoutTotal } = useCustomCheckout();
+  const { lineItems: customCheckoutLineItems, total: customCheckoutTotal } =
+    useCustomCheckout();
   const { debugSettings } = React.useContext(DebugSettingsContext);
-  const { checkoutSession } = React.useContext(
-    MyCheckoutSessionContext
-  );
+  const { checkoutSession } = React.useContext(MyCheckoutSessionContext);
 
   React.useEffect(() => {
-    if (debugSettings.lineItemsDataSource === "my_checkout" && checkoutSession) {
+    if (
+      debugSettings.lineItemsDataSource === "my_checkout" &&
+      checkoutSession
+    ) {
       setLineItems(checkoutSession.lineItems);
       setTotal(checkoutSession.total);
     } else if (debugSettings.lineItemsDataSource === "custom_checkout") {
       setLineItems(customCheckoutLineItems);
       setTotal(customCheckoutTotal.total);
     }
-  }, [customCheckoutLineItems, customCheckoutTotal, checkoutSession, debugSettings]);
+  }, [
+    customCheckoutLineItems,
+    customCheckoutTotal,
+    checkoutSession,
+    debugSettings,
+  ]);
 
   return (
     <div className="grid grid-cols-2 gap-2">
