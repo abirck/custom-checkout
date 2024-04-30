@@ -21,13 +21,20 @@ const PayButton = () => {
   };
 
   return (
-    <button
-      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-8"
-      disabled={!canConfirm || loading}
-      onClick={handleClick}
-    >
-      Pay
-    </button>
+    <>
+      <button
+        className={`bg-blue-500 text-white font-bold py-2 px-4 rounded mt-8 ${!canConfirm || loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
+        disabled={!canConfirm || loading}
+        onClick={handleClick}
+      >
+        Pay
+      </button>
+      {!canConfirm && !loading &&
+        (<div className="mt-8 p-2 bg-red-400 text-white text-xs rounded">
+            Missing confirmation requirements: {confirmationRequirements.join(", ")}
+        </div>)
+      }
+      </>
   );
 };
 
