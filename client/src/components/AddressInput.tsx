@@ -78,20 +78,23 @@ const AddressInput = ({
   };
 
   const handleAddressChange = async (newAddress: Address) => {
+    // ACTUALLY, don't update custom checkout for now to make sure it's not
+    // updating the checkout session when we don't want it to
+
     // always update custom checkout since these values stay on the client
     // and we need to fill out shipping address to be able to confirm
-    const customCheckoutAddress = {
-      name: newAddress.name,
-      address: {
-        country: newAddress.country,
-        city: newAddress.city,
-        line1: newAddress.line1,
-        line2: newAddress.line2,
-        state: newAddress.state,
-        postal_code: newAddress.zip,
-      },
-    };
-    updateShippingAddress(customCheckoutAddress);
+    // const customCheckoutAddress = {
+    //   name: newAddress.name,
+    //   address: {
+    //     country: newAddress.country,
+    //     city: newAddress.city,
+    //     line1: newAddress.line1,
+    //     line2: newAddress.line2,
+    //     state: newAddress.state,
+    //     postal_code: newAddress.zip,
+    //   },
+    // };
+    // updateShippingAddress(customCheckoutAddress);
 
     // update on our server
     if (
