@@ -9,6 +9,7 @@ RUN apk update \
   && yarn build
 
 EXPOSE 3000
+EXPOSE 80
 
 # TODO: Something to remove dev dependencies?
 COPY docker-entry.sh .
