@@ -31,14 +31,32 @@ app.use((req, res, next) => {
 
 app.post("/checkout", async (req: Request<{}>, res) => {
   const requestId = httpContext.get("requestId");
+
+  // duplicate the customer object to avoid modifying the original since we're forced to set 
+  // customer_update.shipping to "auto" in order to get the automatic tax calculation
   console.log(
-    `${requestId}:${new Date().toISOString()}: starting stripe.checkout.sessions.create() from server`
+    `${requestId}:${new Date().toISOString()}: starting customer duplication from merchant server`
+  );
+  const cust = await stripe.customers.retrieve(CUSTOMER);
+  const {name, email, address, shipping} = cust;
+  const newCust = await stripe.customers.create({
+    name,
+    email,
+    address,
+    shipping,
+  });
+  console.log(
+    `${requestId}:${new Date().toISOString()}: finished customer duplication from merchant server`
+  );
+
+  console.log(
+    `${requestId}:${new Date().toISOString()}: starting stripe.checkout.sessions.create() from merchant server`
   );
   const session = await stripe.checkout.sessions.create({
     automatic_tax: {
       enabled: true,
     },
-    customer: CUSTOMER,
+    customer: newCust.id,
     customer_update: {
       shipping: "auto",
     },
@@ -57,7 +75,7 @@ app.post("/checkout", async (req: Request<{}>, res) => {
     expand: ["customer"],
   });
   console.log(
-    `${requestId}:${new Date().toISOString()}: finished stripe.checkout.sessions.create() from server`
+    `${requestId}:${new Date().toISOString()}: finished stripe.checkout.sessions.create() from merchant server`
   );
 
   res.json({ clientSecret: session.client_secret, session: session });
@@ -68,7 +86,7 @@ const requestCheckoutSession = async (
   paymentPageUrl: string
 ) => {
   console.log(
-    `${requestId}:${new Date().toISOString()}: starting GET /v1/payment_pages/cs_test_... from server`
+    `${requestId}:${new Date().toISOString()}: starting GET /v1/payment_pages/cs_test_... from merchant server`
   );
   const result = await axios.get(paymentPageUrl, {
     params: {
@@ -76,7 +94,7 @@ const requestCheckoutSession = async (
     },
   });
   console.log(
-    `${requestId}:${new Date().toISOString()}: finished GET /v1/payment_pages/cs_test_... from server (prove we got a successful response: id=${
+    `${requestId}:${new Date().toISOString()}: finished GET /v1/payment_pages/cs_test_... from merchant server (prove we got a successful response: id=${
       result.data.id
     })`
   );
@@ -101,7 +119,7 @@ app.post(
       }
 
       console.log(
-        `${requestId}:${new Date().toISOString()}: starting POST /v1/payment_pages/cs_test_... from server`
+        `${requestId}:${new Date().toISOString()}: starting POST /v1/payment_pages/cs_test_... from merchant server`
       );
       const params = new URLSearchParams();
       params.append("key", process.env.STRIPE_PK || "");
@@ -120,7 +138,7 @@ app.post(
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
       );
       console.log(
-        `${requestId}:${new Date().toISOString()}: finished POST /v1/payment_pages/cs_test_... from server`
+        `${requestId}:${new Date().toISOString()}: finished POST /v1/payment_pages/cs_test_... from merchant server`
       );
 
       res.json({ ppage: ppage.data });
