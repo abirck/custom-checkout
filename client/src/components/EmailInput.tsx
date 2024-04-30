@@ -4,7 +4,12 @@ import { useCustomCheckout } from "@stripe/react-stripe-js";
 const EmailInput = () => {
   const [email, setEmail] = useState("");
   const [hasSetValidEmail, setHasSetValidEmail] = useState(false);
-  const { updateEmail } = useCustomCheckout();
+  const { email: customCheckoutEmail, updateEmail } = useCustomCheckout();
+
+  // init to custom checkout value
+  React.useEffect(() => {
+    customCheckoutEmail && setEmail(customCheckoutEmail);
+  }, []);
 
   const isEmailValid = (email: string): boolean => {
     // A common, but relatively basic regular expression for email validation
