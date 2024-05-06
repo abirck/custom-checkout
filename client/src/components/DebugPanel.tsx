@@ -13,15 +13,13 @@ const areDebugSettingsEqual = (
 ): boolean => {
   return (
     settings1.shippingAddressDataSource ===
-    settings2.shippingAddressDataSource &&
+      settings2.shippingAddressDataSource &&
     settings1.retrieveAfterUpdateForMyCheckout ===
-    settings2.retrieveAfterUpdateForMyCheckout &&
+      settings2.retrieveAfterUpdateForMyCheckout &&
     settings1.updateValidishAddressesOnly ===
-    settings2.updateValidishAddressesOnly &&
-    settings1.requestPaymentPageFirstOnUpdate ===
-    settings2.requestPaymentPageFirstOnUpdate &&
+      settings2.updateValidishAddressesOnly &&
     settings1.debounceServerUpdateRequests ===
-    settings2.debounceServerUpdateRequests
+      settings2.debounceServerUpdateRequests
   );
 };
 
@@ -55,8 +53,6 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
   ] = React.useState<boolean>(debugSettings.retrieveAfterUpdateForMyCheckout);
   const [updateValidishAddressesOnly, setUpdateValidishAddressesOnly] =
     React.useState<boolean>(debugSettings.updateValidishAddressesOnly);
-  const [requestPaymentPageFirstOnUpdate, setRequestPaymentPageFirstOnUpdate] =
-    React.useState<boolean>(debugSettings.requestPaymentPageFirstOnUpdate);
   const [debounceServerUpdateRequests, setDebounceServerUpdateRequests] =
     React.useState<boolean>(debugSettings.debounceServerUpdateRequests);
 
@@ -78,13 +74,6 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
     setUpdateValidishAddressesOnly(selected);
   };
 
-  const handleRequestPaymentPageFirstOnUpdate = (e: {
-    target: { checked: boolean };
-  }) => {
-    const selected = e.target.checked;
-    setRequestPaymentPageFirstOnUpdate(selected);
-  };
-
   const handleDebounceServerUpdateRequestsChange = (e: {
     target: { checked: boolean };
   }) => {
@@ -98,7 +87,6 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
       shippingAddressDataSource,
       retrieveAfterUpdateForMyCheckout,
       updateValidishAddressesOnly,
-      requestPaymentPageFirstOnUpdate,
       debounceServerUpdateRequests,
     };
     if (!slideOverOpen && !areDebugSettingsEqual(debugSettings, newSettings)) {
@@ -172,28 +160,6 @@ const DebugPanel: React.FC<{ className?: string }> = ({ className }) => {
                 className="font-medium text-gray-900"
               >
                 Update server address on valid-ish addresses only
-              </label>
-            </div>
-          </div>
-          <div className="relative flex items-start">
-            <div className="flex h-6 items-center">
-              <input
-                id="requestPaymentPageFirstOnUpdate"
-                aria-describedby="comments-description"
-                name="requestPaymentPageFirstOnUpdate"
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                checked={requestPaymentPageFirstOnUpdate}
-                onChange={handleRequestPaymentPageFirstOnUpdate}
-              />
-            </div>
-            <div className="ml-3 text-sm leading-6">
-              <label
-                htmlFor="requestPaymentPageFirstOnUpdate"
-                className="font-medium text-gray-900"
-              >
-                When making an update request from the merchant server, should
-                we request the page from Stripe before modifying?
               </label>
             </div>
           </div>

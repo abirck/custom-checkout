@@ -2,11 +2,17 @@ import React, { ReactNode } from "react";
 import { type Address } from "../components/AddressInput";
 import { type LineItem, type TaxAmount } from "../components/LineItems";
 
+export type ShippingRate = {
+  displayName: string;
+  amount: number;
+};
+
 export type MyCheckoutSession = {
   sessionId: string;
   shippingAddress: Address;
   lineItems: LineItem[];
   total: number;
+  shippingRate: ShippingRate | null;
 };
 
 type MyCheckoutSessionContextType = {
@@ -55,6 +61,7 @@ const parseCheckoutSession = (session: any): MyCheckoutSession => {
       zip: address.postal_code,
     },
     lineItems: [],
+    shippingRate: null,
     total,
   };
 };

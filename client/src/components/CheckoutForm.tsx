@@ -10,6 +10,7 @@ import {
   parsePaymentPageAndMergeAddress,
 } from "../helpers/serverHelper";
 import { DebugSettingsContext } from "../providers/DebugSettingsProvider";
+import { useCustomCheckout } from "@stripe/react-stripe-js";
 
 const DEBOUNCE_MS = 200;
 
@@ -18,6 +19,7 @@ const CheckoutForm = () => {
     MyCheckoutSessionContext
   );
   const { debugSettings } = React.useContext(DebugSettingsContext);
+  const { fetchUpdates } = useCustomCheckout();
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
   React.useEffect(() => {
@@ -25,7 +27,7 @@ const CheckoutForm = () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-    }
+    };
   }, []);
 
   function debounce(fn) {
@@ -38,28 +40,37 @@ const CheckoutForm = () => {
     };
   }
 
-  const debouncedSendServerNewAddress = debounce(async ({ address }: { address: Address }) => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort(); // Cancel any in-flight request
+  const debouncedSendServerNewAddress = debounce(
+    async ({ address }: { address: Address }) => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort(); // Cancel any in-flight request
+      }
+
+      abortControllerRef.current = new AbortController();
+      try {
+        sendServerNewAddress({
+          address,
+          abortController: abortControllerRef.current,
+        });
+      } catch (err) {
+        // I think cancelled requests should end up here but they're not? Eh, look into it later
+        console.error(`error sending new shipping address to server: ${err}`);
+      }
     }
+  );
 
-    abortControllerRef.current = new AbortController();
-    try {
-      sendServerNewAddress({ address, abortController: abortControllerRef.current });
-    } catch (err) {
-      // I think cancelled requests should end up here but they're not? Eh, look into it later
-      console.error(`error sending new shipping address to server: ${err}`);
-    }
-  });
-
-
-  const sendServerNewAddress = async ({ address, abortController }: { address: Address, abortController?: AbortController }) => {
+  const sendServerNewAddress = async ({
+    address,
+    abortController,
+  }: {
+    address: Address;
+    abortController?: AbortController;
+  }) => {
     if (checkoutSession?.sessionId) {
       // this method will handle updating the checkout session state with the response
       const res = await setAddress({
         sessionId: checkoutSession.sessionId,
         address,
-        requestSessionFirst: debugSettings.requestPaymentPageFirstOnUpdate,
         abortController,
       });
       if (debugSettings.retrieveAfterUpdateForMyCheckout) {
@@ -68,20 +79,17 @@ const CheckoutForm = () => {
         // that we could use to do that and get accurate timings here. So instead I'll just add 75 ms delay
         const startTime = performance.now();
         console.info(
-          `${new Date().toISOString()}: *SIMULATING* GET /v1/payment_pages/cs_test_...`
+          `${new Date().toISOString()}: calling custom_checkout.fetchUpdates()`
         );
-        setTimeout(() => {
-          const endTime = performance.now();
-          const elapsedTime = endTime - startTime;
-          console.info(
-            `${new Date().toISOString()}: finished *SIMULATING* GET //v1/payment_pages/cs_test_... (${elapsedTime.toFixed(
-              3
-            )} ms)`
-          );
-          setCheckoutSession(
-            parsePaymentPageAndMergeAddress(address, res.ppage)
-          );
-        }, 75);
+        await fetchUpdates();
+        const endTime = performance.now();
+        const elapsedTime = endTime - startTime;
+        console.info(
+          `${new Date().toISOString()}: finished custom_checkout.fetchUpdates() (${elapsedTime.toFixed(
+            3
+          )} ms)`
+        );
+        setCheckoutSession(parsePaymentPageAndMergeAddress(address, res.ppage));
       } else {
         // update based on what we got from the server w/o refreshing from Stripe
         setCheckoutSession(parsePaymentPageAndMergeAddress(address, res.ppage));
@@ -90,7 +98,9 @@ const CheckoutForm = () => {
   };
 
   const handleAddressChange = async (address: Address) => {
-    console.log(`debugSettings.debounceServerUpdateRequests: ${debugSettings.debounceServerUpdateRequests}`)
+    console.log(
+      `debugSettings.debounceServerUpdateRequests: ${debugSettings.debounceServerUpdateRequests}`
+    );
     if (debugSettings.debounceServerUpdateRequests) {
       debouncedSendServerNewAddress({ address });
     } else {

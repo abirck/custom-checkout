@@ -8,7 +8,6 @@ export type DebugSettings = {
   shippingAddressDataSource: ShippingAddressDataSource;
   retrieveAfterUpdateForMyCheckout: boolean;
   updateValidishAddressesOnly: boolean;
-  requestPaymentPageFirstOnUpdate: boolean;
   debounceServerUpdateRequests: boolean;
 };
 
@@ -20,10 +19,9 @@ type DebugSettingsContextType = {
 export const DebugSettingsContext =
   React.createContext<DebugSettingsContextType>({
     debugSettings: {
-      shippingAddressDataSource: "my_checkout",
+      shippingAddressDataSource: "custom_checkout",
       retrieveAfterUpdateForMyCheckout: true,
       updateValidishAddressesOnly: true,
-      requestPaymentPageFirstOnUpdate: true,
       debounceServerUpdateRequests: true,
     },
     setDebugSettings: () => {

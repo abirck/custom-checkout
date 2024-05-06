@@ -46,18 +46,16 @@ export const fetchCheckout = async (): Promise<{
 export const setAddress = async ({
   sessionId,
   address,
-  requestSessionFirst,
-  abortController
+  abortController,
 }: {
   sessionId: string;
   address: Address;
-  requestSessionFirst: boolean;
   abortController?: AbortController | null;
 }): Promise<{ ppage: any }> => {
   const startTime = performance.now();
   console.info(`${new Date().toISOString()}: starting POST /setAddress`);
   const res = await fetch(`/setAddress`, {
-    ... (abortController && { signal: abortController.signal }),
+    ...(abortController && { signal: abortController.signal }),
     method: "POST",
     mode: "cors",
     cache: "no-cache",
@@ -67,7 +65,7 @@ export const setAddress = async ({
     },
     redirect: "follow",
     referrerPolicy: "no-referrer",
-    body: JSON.stringify({ sessionId, address, requestSessionFirst }),
+    body: JSON.stringify({ sessionId, address }),
   });
   const endTime = performance.now();
   const elapsedTime = endTime - startTime;
@@ -106,10 +104,18 @@ export const parsePaymentPageAndMergeAddress = (
       };
     }
   );
+  const { shipping_rate } = ppage.line_item_group;
+  const shippingRate = shipping_rate
+    ? {
+        displayName: shipping_rate.display_name,
+        amount: shipping_rate.amount,
+      }
+    : null;
   return {
     sessionId: ppage.session_id,
     shippingAddress: address,
     lineItems,
+    shippingRate,
     total,
   };
 };
