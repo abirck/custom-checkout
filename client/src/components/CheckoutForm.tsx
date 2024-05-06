@@ -14,7 +14,7 @@ import { DebugSettingsContext } from "../providers/DebugSettingsProvider";
 const DEBOUNCE_MS = 200;
 
 const CheckoutForm = () => {
-  const { checkoutSession, setCheckoutSession } = React.useContext(
+  const { checkoutSession, setCheckoutSession, fetchUpdates } = React.useContext(
     MyCheckoutSessionContext
   );
   const { debugSettings } = React.useContext(DebugSettingsContext);
@@ -68,20 +68,20 @@ const CheckoutForm = () => {
         // that we could use to do that and get accurate timings here. So instead I'll just add 75 ms delay
         const startTime = performance.now();
         console.info(
-          `${new Date().toISOString()}: *SIMULATING* GET /v1/payment_pages/cs_test_...`
+          `${new Date().toISOString()}: calling custom_checkout.fetchUpdates()`
         );
-        setTimeout(() => {
+        fetchUpdates.then(() => {
           const endTime = performance.now();
           const elapsedTime = endTime - startTime;
           console.info(
-            `${new Date().toISOString()}: finished *SIMULATING* GET //v1/payment_pages/cs_test_... (${elapsedTime.toFixed(
+            `${new Date().toISOString()}: finished custom_checkout.fetchUpdates() (${elapsedTime.toFixed(
               3
             )} ms)`
           );
           setCheckoutSession(
             parsePaymentPageAndMergeAddress(address, res.ppage)
           );
-        }, 75);
+        });
       } else {
         // update based on what we got from the server w/o refreshing from Stripe
         setCheckoutSession(parsePaymentPageAndMergeAddress(address, res.ppage));

@@ -13,7 +13,7 @@ import DebugSettingsProvider, {
 const STRIPE_PK = "pk_test_FdYoaC1weOBHn0jv0KvgbHQZ";
 
 const stripe = loadStripe(STRIPE_PK, {
-  betas: ["custom_checkout_beta_2"],
+  betas: ["custom_checkout_beta_2", "custom_checkout_internal_dev_beta"],
 });
 
 const CheckoutPage: React.FC<{ className?: string }> = ({ className }) => {
